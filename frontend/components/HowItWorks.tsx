@@ -83,15 +83,13 @@ const HowItWorks = () => {
                                     </div>
                                     
                                     <h3 
-                                        className="text-2xl lg:text-3xl font-black mb-4 group-hover:text-link transition-colors"
-                                        style={{ color: titleColor }}
+                                        className="text-2xl lg:text-3xl font-black mb-4 text-gray-900 dark:text-white group-hover:text-link transition-colors"
                                     >
                                         {step.title}
                                     </h3>
                                     
                                     <p 
-                                        className="text-base lg:text-lg leading-relaxed"
-                                        style={{ color: descriptionColor }}
+                                        className="text-base lg:text-lg leading-relaxed text-gray-700 dark:text-gray-200"
                                     >
                                         {step.description}
                                     </p>
@@ -148,15 +146,13 @@ const HowItWorks = () => {
                                 </div>
                                 
                                 <h3 
-                                    className="text-xl font-black mb-3"
-                                    style={{ color: titleColor }}
+                                    className="text-xl font-black mb-3 text-gray-900"
                                 >
                                     {step.title}
                                 </h3>
                                 
                                 <p 
-                                    className="text-sm leading-relaxed px-2"
-                                    style={{ color: descriptionColor }}
+                                    className="text-sm leading-relaxed px-2 text-gray-700"
                                 >
                                     {step.description}
                                 </p>
