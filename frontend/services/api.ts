@@ -374,17 +374,67 @@ export const updateSettings = async (settings: Partial<Settings>): Promise<Setti
 
 // --- Admin API Calls ---
 
+function normalizeRafflePayload(input: any) {
+    // Normaliza para evitar nulls que rompen class-validator en backend (IsString/IsArray).
+    const raffle: any = { ...(input || {}) };
+
+    // Opcionales string: si vienen null, mejor omitirlos.
+    for (const key of ['description', 'purchaseDescription', 'imageUrl', 'slug']) {
+        if (raffle[key] === null) delete raffle[key];
+    }
+
+    // Arrays: si vienen null/undefined, poner [] (o eliminar) según convenga.
+    if (raffle.gallery === null) delete raffle.gallery;
+    if (raffle.packs === null) delete raffle.packs;
+    if (raffle.bonuses === null) delete raffle.bonuses;
+
+    if (typeof raffle.gallery !== 'undefined' && !Array.isArray(raffle.gallery)) {
+        delete raffle.gallery;
+    }
+
+    // packs debe ser array si existe
+    if (typeof raffle.packs !== 'undefined') {
+        if (!Array.isArray(raffle.packs)) {
+            delete raffle.packs;
+        } else {
+            // Eliminar items vacíos
+            raffle.packs = raffle.packs.filter(Boolean);
+        }
+    }
+
+    // bonuses debe ser array si existe
+    if (typeof raffle.bonuses !== 'undefined') {
+        if (!Array.isArray(raffle.bonuses)) {
+            raffle.bonuses = [];
+        } else {
+            raffle.bonuses = raffle.bonuses.filter((b: any) => typeof b === 'string' && b.trim().length > 0);
+        }
+    }
+
+    // Coerciones básicas de números (por si el form manda string)
+    if (typeof raffle.price === 'string') raffle.price = Number(raffle.price);
+    if (typeof raffle.tickets === 'string') raffle.tickets = Number(raffle.tickets);
+    if (typeof raffle.numeroOportunidades === 'string') raffle.numeroOportunidades = Number(raffle.numeroOportunidades);
+    if (typeof raffle.giftTickets === 'string') raffle.giftTickets = Number(raffle.giftTickets);
+
+    // drawDate: si es Date, pasar a ISO
+    if (raffle.drawDate instanceof Date) raffle.drawDate = raffle.drawDate.toISOString();
+
+    return raffle;
+}
+
 export const createRaffle = async (raffle: any): Promise<Raffle> => {
     try {
+        const payload = normalizeRafflePayload(raffle);
         console.log('🚀 TRYING BACKEND FOR CREATE RAFFLE');
-        console.log('📤 Payload packs:', raffle.packs);
-        console.log('📤 Payload bonuses:', raffle.bonuses);
-        console.log('📤 Full payload:', JSON.stringify(raffle, null, 2));
+        console.log('📤 Payload packs:', payload.packs);
+        console.log('📤 Payload bonuses:', payload.bonuses);
+        console.log('📤 Full payload:', JSON.stringify(payload, null, 2));
 
         const response = await fetch(`${API_URL}/admin/raffles`, {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify(raffle),
+            body: JSON.stringify(payload),
         });
 
         if (response.ok) {
@@ -419,16 +469,17 @@ export const createRaffle = async (raffle: any): Promise<Raffle> => {
 
 export const updateRaffle = async (id: string, raffle: Partial<Raffle>): Promise<Raffle> => {
     try {
+        const payload = normalizeRafflePayload(raffle);
         console.log('🔄 TRYING BACKEND FOR UPDATE RAFFLE');
         console.log('🔄 Update ID:', id);
-        console.log('🔄 Update payload packs:', raffle.packs);
-        console.log('🔄 Update payload bonuses:', raffle.bonuses);
-        console.log('🔄 Full update payload:', JSON.stringify(raffle, null, 2));
+        console.log('🔄 Update payload packs:', (payload as any).packs);
+        console.log('🔄 Update payload bonuses:', (payload as any).bonuses);
+        console.log('🔄 Full update payload:', JSON.stringify(payload, null, 2));
 
         const response = await fetch(`${API_URL}/admin/raffles/${id}`, {
             method: 'PATCH',
             headers: getAuthHeaders(),
-            body: JSON.stringify(raffle),
+            body: JSON.stringify(payload),
         });
 
         if (response.ok) {
