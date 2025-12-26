@@ -57,15 +57,27 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const bgPrimary = appearance?.colors?.backgroundPrimary || '#1a1a1a';
     const bgSecondary = appearance?.colors?.backgroundSecondary || '#2a2a2a';
 
+    // Seguro anti-contraste: si el usuario elige un color de texto con poco contraste,
+    // usamos automáticamente el color correcto para evitar "texto invisible" (PC/móvil).
+    const pickSafeTextColor = (preferred: string | undefined, bg: string) => {
+      const isValidHex = typeof preferred === 'string' && Boolean(DesignSystemUtils.hexToRgb(preferred));
+      if (isValidHex) {
+        const ratio = DesignSystemUtils.getContrastRatio(preferred!, bg);
+        // WCAG AA para texto normal ≈ 4.5:1
+        if (ratio >= 4.5) return preferred!;
+      }
+      return DesignSystemUtils.getContrastText(bg);
+    };
+
     return {
       // Colores para fondo primario
-      title: appearance?.colors?.titleColor || DesignSystemUtils.getContrastText(bgPrimary),
-      subtitle: appearance?.colors?.subtitleColor || DesignSystemUtils.getContrastText(bgPrimary),
-      description: appearance?.colors?.descriptionColor || DesignSystemUtils.getContrastText(bgPrimary),
+      title: pickSafeTextColor(appearance?.colors?.titleColor, bgPrimary),
+      subtitle: pickSafeTextColor(appearance?.colors?.subtitleColor, bgPrimary),
+      description: pickSafeTextColor(appearance?.colors?.descriptionColor, bgPrimary),
       // Colores para fondo secundario
-      titleOnSecondary: appearance?.colors?.titleColor || DesignSystemUtils.getContrastText(bgSecondary),
-      subtitleOnSecondary: appearance?.colors?.subtitleColor || DesignSystemUtils.getContrastText(bgSecondary),
-      descriptionOnSecondary: appearance?.colors?.descriptionColor || DesignSystemUtils.getContrastText(bgSecondary),
+      titleOnSecondary: pickSafeTextColor(appearance?.colors?.titleColor, bgSecondary),
+      subtitleOnSecondary: pickSafeTextColor(appearance?.colors?.subtitleColor, bgSecondary),
+      descriptionOnSecondary: pickSafeTextColor(appearance?.colors?.descriptionColor, bgSecondary),
     };
   }, [
     appearance?.colors?.backgroundPrimary,
