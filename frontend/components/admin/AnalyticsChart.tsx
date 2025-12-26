@@ -22,15 +22,23 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
     height = 200, 
     className = '' 
 }) => {
-    const maxValue = Math.max(...data.map(d => d.value));
+    const safeData: ChartData[] = Array.isArray(data) ? data.filter(Boolean) : [];
+    const maxValue = Math.max(0, ...safeData.map(d => (typeof d.value === 'number' && isFinite(d.value) ? d.value : 0)));
 
     const renderBarChart = () => {
+        if (safeData.length === 0) {
+            return (
+                <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                    Sin datos para mostrar
+                </div>
+            );
+        }
         // Optimizar para móvil: rotar labels si hay muchos datos
-        const shouldRotate = data.length > 10;
+        const shouldRotate = safeData.length > 10;
         
         return (
             <div className="flex items-end justify-between h-full space-x-1 sm:space-x-2 overflow-x-auto pb-8 sm:pb-4">
-                {data.map((item, index) => (
+                {safeData.map((item, index) => (
                     <motion.div
                         key={item.label}
                         className="flex flex-col items-center flex-1 min-w-[40px] sm:min-w-[50px]"
@@ -44,7 +52,7 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                                     item.color || 'bg-blue-500'
                                 }`}
                                 style={{
-                                    height: `${(item.value / maxValue) * 100}%`,
+                                    height: maxValue > 0 ? `${(item.value / maxValue) * 100}%` : '0%',
                                     minHeight: '4px'
                                 }}
                             />
@@ -59,9 +67,35 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
         );
     };
 
-    const renderLineChart = () => (
-        <div className="relative h-full">
-            <svg className="w-full h-full" viewBox="0 0 300 200">
+    const renderLineChart = () => {
+        if (safeData.length === 0) {
+            return (
+                <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                    Sin datos para mostrar
+                </div>
+            );
+        }
+
+        const getPoint = (item: ChartData, index: number) => {
+            const x = safeData.length === 1 ? 150 : (index / (safeData.length - 1)) * 280 + 10;
+            const safeValue = typeof item.value === 'number' && isFinite(item.value) ? item.value : 0;
+            const y = 200 - (maxValue > 0 ? (safeValue / maxValue) * 180 : 0);
+            return { x, y };
+        };
+
+        const lineD = safeData
+            .map((item, index) => {
+                const { x, y } = getPoint(item, index);
+                return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+            })
+            .join(' ');
+
+        // Solo dibujar área si hay al menos 2 puntos (evita "L ..." inválido)
+        const areaD = safeData.length >= 2 ? `${lineD} L 290 200 L 10 200 Z` : '';
+
+        return (
+            <div className="relative h-full">
+                <svg className="w-full h-full" viewBox="0 0 300 200">
                 <defs>
                     <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                         <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8"/>
@@ -84,11 +118,7 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 
                 {/* Data line */}
                 <motion.path
-                    d={data.map((item, index) => {
-                        const x = (index / (data.length - 1)) * 280 + 10;
-                        const y = 200 - (item.value / maxValue) * 180;
-                        return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-                    }).join(' ')}
+                    d={lineD}
                     stroke="#3b82f6"
                     strokeWidth="2"
                     fill="none"
@@ -98,22 +128,19 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 />
                 
                 {/* Area under line */}
-                <motion.path
-                    d={`${data.map((item, index) => {
-                        const x = (index / (data.length - 1)) * 280 + 10;
-                        const y = 200 - (item.value / maxValue) * 180;
-                        return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-                    }).join(' ')} L 290 200 L 10 200 Z`}
-                    fill="url(#lineGradient)"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 1, delay: 0.5 }}
-                />
+                {areaD ? (
+                    <motion.path
+                        d={areaD}
+                        fill="url(#lineGradient)"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 1, delay: 0.5 }}
+                    />
+                ) : null}
                 
                 {/* Data points */}
-                {data.map((item, index) => {
-                    const x = (index / (data.length - 1)) * 280 + 10;
-                    const y = 200 - (item.value / maxValue) * 180;
+                {safeData.map((item, index) => {
+                    const { x, y } = getPoint(item, index);
                     return (
                         <motion.circle
                             key={index}
@@ -129,16 +156,24 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 })}
             </svg>
         </div>
-    );
+        );
+    };
 
     const renderPieChart = () => {
-        const total = data.reduce((sum, item) => sum + item.value, 0);
+        const total = safeData.reduce((sum, item) => sum + (typeof item.value === 'number' && isFinite(item.value) ? item.value : 0), 0);
+        if (safeData.length === 0 || total <= 0) {
+            return (
+                <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                    Sin datos para mostrar
+                </div>
+            );
+        }
         let currentAngle = 0;
         
         return (
             <div className="relative h-full flex items-center justify-center">
                 <svg className="w-full h-full" viewBox="0 0 200 200">
-                    {data.map((item, index) => {
+                    {safeData.map((item, index) => {
                         const percentage = (item.value / total) * 100;
                         const angle = (item.value / total) * 360;
                         const startAngle = currentAngle;
@@ -211,7 +246,7 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
             {/* Legend for pie charts - Optimizado para móvil */}
             {(type === 'pie' || type === 'donut') && (
                 <div className="mt-3 sm:mt-4 flex flex-wrap gap-2 sm:gap-4 justify-center">
-                    {data.map((item, index) => (
+                    {safeData.map((item, index) => (
                         <div key={index} className="flex items-center gap-1.5 sm:gap-2">
                             <div
                                 className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0"
