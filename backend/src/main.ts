@@ -69,6 +69,12 @@ async function bootstrap() {
     'https://www.luckysnaphn.com',
     'https://luckysnap.netlify.app',
     'https://neodemo.netlify.app',
+
+    // Cliente: Rifas Hernandez
+    'https://rifashernandez.pro',
+    'https://www.rifashernandez.pro',
+    'http://rifashernandez.pro',
+    'http://www.rifashernandez.pro',
   ];
 
   app.enableCors({
