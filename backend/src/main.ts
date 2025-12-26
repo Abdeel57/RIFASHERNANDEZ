@@ -138,6 +138,7 @@ async function bootstrap() {
     await dbSetup.ensureAdminUsersTable();
     await dbSetup.ensureSettingsTable();
     await dbSetup.ensureSettingsTableColumns();
+    await dbSetup.ensureBootstrapAdminUser();
     console.log('✅ DB init/check completado');
   } catch (e: any) {
     console.warn('⚠️ DB init/check falló, el servidor iniciará igual. Error:', e?.message || e);

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class DatabaseSetupService {
@@ -415,6 +416,51 @@ export class DatabaseSetupService {
     } catch (error) {
       this.logger.warn('⚠️ Error checking/adding text color columns to settings table:', error);
     }
+  }
+
+  /**
+   * Crea un usuario admin inicial desde variables de entorno (sin consola).
+   * - Si ADMIN_BOOTSTRAP_USERNAME / ADMIN_BOOTSTRAP_PASSWORD no están definidos, no hace nada.
+   * - Si el usuario ya existe, no hace nada.
+   *
+   * Variables:
+   * - ADMIN_BOOTSTRAP_USERNAME (ej: admin)
+   * - ADMIN_BOOTSTRAP_PASSWORD (ej: admin123)
+   * - ADMIN_BOOTSTRAP_NAME (opcional)
+   * - ADMIN_BOOTSTRAP_EMAIL (opcional)
+   * - ADMIN_BOOTSTRAP_ROLE (opcional; default: admin)
+   */
+  async ensureBootstrapAdminUser() {
+    const username = (process.env.ADMIN_BOOTSTRAP_USERNAME || '').trim();
+    const password = process.env.ADMIN_BOOTSTRAP_PASSWORD || '';
+    const name = (process.env.ADMIN_BOOTSTRAP_NAME || 'Administrador').trim();
+    const email = (process.env.ADMIN_BOOTSTRAP_EMAIL || '').trim() || null;
+    const role = (process.env.ADMIN_BOOTSTRAP_ROLE || 'admin').trim() || 'admin';
+
+    if (!username || !password) {
+      return;
+    }
+
+    await this.ensureAdminUsersTable();
+
+    const existing = await this.prisma.adminUser.findUnique({ where: { username } });
+    if (existing) {
+      this.logger.log(`✅ Bootstrap admin ya existe: ${username}`);
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await this.prisma.adminUser.create({
+      data: {
+        name,
+        username,
+        email,
+        password: hashedPassword,
+        role,
+      },
+    });
+
+    this.logger.log(`✅ Bootstrap admin creado: ${username}`);
   }
 }
 
