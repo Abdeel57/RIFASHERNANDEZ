@@ -16,13 +16,16 @@ const isLocal = typeof window !== 'undefined' && (
     window.location.hostname === '127.0.0.1' ||
     window.location.hostname === '0.0.0.0'
 );
-const API_URL = isLocal ? 'http://localhost:3000/api' : ((import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api');
+const ENV_API_URL = (import.meta as any).env?.VITE_API_URL as string | undefined;
+// En producción, si no hay VITE_API_URL, usamos /api para aprovechar el redirect de Netlify.
+const API_URL = isLocal ? 'http://localhost:3000/api' : (ENV_API_URL || '/api');
+const ALLOW_LOCAL_FALLBACK = isLocal;
 
 console.log('🔌 API Configuration:', {
     hostname: typeof window !== 'undefined' ? window.location.hostname : 'server',
     isLocal,
     API_URL,
-    envUrl: (import.meta as any).env?.VITE_API_URL
+    envUrl: ENV_API_URL
 });
 
 // Helper para obtener el token JWT del localStorage
@@ -181,9 +184,13 @@ export const getActiveRaffles = async (): Promise<Raffle[]> => {
     }
 
     // Fallback to local data
-    console.log('🔄 Using local data for active raffles');
-    const { localApi } = await import('./localApi');
-    return localApi.getRaffles();
+    if (ALLOW_LOCAL_FALLBACK) {
+        console.log('🔄 Using local data for active raffles (dev only)');
+        const { localApi } = await import('./localApi');
+        return localApi.getRaffles();
+    }
+    // En producción NO usar datos de plantilla.
+    throw new Error('No se pudieron cargar las rifas activas desde el backend.');
 };
 
 export const getRaffleBySlug = async (slug: string): Promise<Raffle | undefined> => {
@@ -312,9 +319,13 @@ export const getPastWinners = async (): Promise<Winner[]> => {
     }
 
     // Fallback to local data
-    console.log('🔄 Using local data for winners');
-    const { localApi } = await import('./localApi');
-    return localApi.getWinners();
+    if (ALLOW_LOCAL_FALLBACK) {
+        console.log('🔄 Using local data for winners (dev only)');
+        const { localApi } = await import('./localApi');
+        return localApi.getWinners();
+    }
+    // En producción NO usar datos de plantilla.
+    return [];
 };
 
 export const getSettings = async (): Promise<Settings> => {
@@ -333,9 +344,13 @@ export const getSettings = async (): Promise<Settings> => {
     }
 
     // Fallback to local data
-    console.log('🔄 Using local data for settings');
-    const { localApi } = await import('./localApi');
-    return localApi.getSettings();
+    if (ALLOW_LOCAL_FALLBACK) {
+        console.log('🔄 Using local data for settings (dev only)');
+        const { localApi } = await import('./localApi');
+        return localApi.getSettings();
+    }
+    // En producción NO usar datos de plantilla.
+    throw new Error('No se pudieron cargar los settings desde el backend.');
 };
 
 export const updateSettings = async (settings: Partial<Settings>): Promise<Settings> => {
