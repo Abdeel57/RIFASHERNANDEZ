@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, HttpException } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
+import { DatabaseSetupService } from './admin/database-setup.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -126,6 +127,21 @@ async function bootstrap() {
   console.log(`📡 Environment: ${nodeEnv}`);
   console.log(`🌐 Port: ${port}`);
   console.log(`🔗 API Base: http://localhost:${port}/api`);
+
+  // Inicializar/asegurar tablas al arrancar (especialmente útil en Railway sin consola)
+  try {
+    const dbSetup = app.get(DatabaseSetupService);
+    await dbSetup.ensureUsersTable();
+    await dbSetup.ensureRafflesTable();
+    await dbSetup.ensureOrdersTable();
+    await dbSetup.ensureWinnersTable();
+    await dbSetup.ensureAdminUsersTable();
+    await dbSetup.ensureSettingsTable();
+    await dbSetup.ensureSettingsTableColumns();
+    console.log('✅ DB init/check completado');
+  } catch (e: any) {
+    console.warn('⚠️ DB init/check falló, el servidor iniciará igual. Error:', e?.message || e);
+  }
 
   await app.listen(port);
 }

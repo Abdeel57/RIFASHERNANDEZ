@@ -322,6 +322,65 @@ export class DatabaseSetupService {
     }
   }
 
+  async ensureSettingsTable() {
+    try {
+      await this.prisma.$queryRaw`SELECT 1 FROM "settings" LIMIT 1`;
+    } catch (error: any) {
+      const isTableError =
+        error.code === 'P2021' ||
+        error.code === '42P01' ||
+        error.message?.includes('does not exist') ||
+        error.message?.includes('Unknown table') ||
+        (error.message?.includes('relation') && error.message?.includes('does not exist'));
+
+      if (isTableError) {
+        this.logger.warn('⚠️ settings table does not exist, creating it...');
+
+        await this.prisma.$executeRaw`
+          CREATE TABLE IF NOT EXISTS "settings" (
+              "id" TEXT NOT NULL,
+              "siteName" TEXT NOT NULL DEFAULT 'Lucky Snap',
+              "logo" TEXT,
+              "favicon" TEXT,
+              "logoAnimation" TEXT NOT NULL DEFAULT 'rotate',
+              "primaryColor" TEXT NOT NULL DEFAULT '#111827',
+              "secondaryColor" TEXT NOT NULL DEFAULT '#1f2937',
+              "accentColor" TEXT NOT NULL DEFAULT '#ec4899',
+              "actionColor" TEXT NOT NULL DEFAULT '#0ea5e9',
+              "titleColor" TEXT,
+              "subtitleColor" TEXT,
+              "descriptionColor" TEXT,
+              "whatsapp" TEXT,
+              "email" TEXT,
+              "emailFromName" TEXT,
+              "emailReplyTo" TEXT,
+              "emailSubject" TEXT,
+              "facebookUrl" TEXT,
+              "instagramUrl" TEXT,
+              "tiktokUrl" TEXT,
+              "paymentAccounts" JSONB,
+              "faqs" JSONB,
+              "displayPreferences" JSONB,
+              "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              CONSTRAINT "settings_pkey" PRIMARY KEY ("id")
+          );
+        `;
+
+        // Crear registro inicial si no existe (id esperado por el frontend/backend)
+        await this.prisma.$executeRaw`
+          INSERT INTO "settings" ("id", "siteName", "createdAt", "updatedAt")
+          VALUES ('main_settings', 'Lucky Snap', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          ON CONFLICT ("id") DO NOTHING;
+        `;
+
+        this.logger.log('✅ settings table created successfully');
+      } else {
+        throw error;
+      }
+    }
+  }
+
   async ensureSettingsTableColumns() {
     try {
       const titleColorExists = await this.prisma.$queryRaw<Array<{column_name: string}>>`
