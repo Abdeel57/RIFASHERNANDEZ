@@ -47,6 +47,7 @@ export class DatabaseSetupService {
   async ensureRafflesTable() {
     try {
       const columnsToCheck = [
+        { name: 'purchaseDescription', type: 'TEXT', nullable: true },
         { name: 'gallery', type: 'JSONB', nullable: true },
         { name: 'sold', type: 'INTEGER', nullable: false, defaultValue: '0' },
         { name: 'status', type: 'TEXT', nullable: false, defaultValue: "'draft'" },
@@ -135,6 +136,7 @@ export class DatabaseSetupService {
               "id" TEXT NOT NULL,
               "title" TEXT NOT NULL,
               "description" TEXT,
+              "purchaseDescription" TEXT,
               "imageUrl" TEXT,
               "gallery" JSONB,
               "price" DOUBLE PRECISION NOT NULL DEFAULT 50.0,
