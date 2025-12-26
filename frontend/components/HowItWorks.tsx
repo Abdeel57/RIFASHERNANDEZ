@@ -12,6 +12,13 @@ const HowItWorks = () => {
     // Usar colores pre-calculados (optimización de rendimiento)
     const titleColor = preCalculatedTextColors.title;
     const descriptionColor = preCalculatedTextColors.description;
+
+    // Determinar si el fondo principal es oscuro para asegurar contraste en tarjetas
+    const bgPrimary = appearance?.colors?.backgroundPrimary || '#111827';
+    const isDarkBackground = DesignSystemUtils.getContrastText(bgPrimary) === '#FFFFFF';
+    const cardBaseClass = isDarkBackground
+        ? 'bg-white/5 border-white/10 backdrop-blur-md'
+        : 'bg-white border-gray-200';
     
     const steps = [
         {
@@ -19,24 +26,24 @@ const HowItWorks = () => {
             title: 'Elige tu Sorteo',
             description: 'Explora nuestros sorteos activos y encuentra el premio de tus sueños.',
             color: 'from-blue-500 to-blue-600',
-            bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-            borderColor: 'border-blue-200 dark:border-blue-800'
+            bgColor: cardBaseClass,
+            borderColor: isDarkBackground ? 'border-white/10' : 'border-blue-200'
         },
         {
             icon: MousePointerClick,
             title: 'Selecciona tus Boletos',
             description: 'Escoge tus números de la suerte, llena tus datos y aparta tu lugar. ¡Es fácil y rápido!',
             color: 'from-purple-500 to-purple-600',
-            bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-            borderColor: 'border-purple-200 dark:border-purple-800'
+            bgColor: cardBaseClass,
+            borderColor: isDarkBackground ? 'border-white/10' : 'border-purple-200'
         },
         {
             icon: Trophy,
             title: '¡Gana!',
             description: 'Sigue el sorteo en la fecha indicada. ¡El próximo ganador podrías ser tú!',
             color: 'from-green-500 to-green-600',
-            bgColor: 'bg-green-50 dark:bg-green-900/20',
-            borderColor: 'border-green-200 dark:border-green-800'
+            bgColor: cardBaseClass,
+            borderColor: isDarkBackground ? 'border-white/10' : 'border-green-200'
         }
     ];
 
@@ -83,13 +90,13 @@ const HowItWorks = () => {
                                     </div>
                                     
                                     <h3 
-                                        className="text-2xl lg:text-3xl font-black mb-4 text-gray-900 dark:text-white group-hover:text-link transition-colors"
+                                        className={`text-2xl lg:text-3xl font-black mb-4 ${isDarkBackground ? 'text-white' : 'text-gray-900'} group-hover:text-link transition-colors`}
                                     >
                                         {step.title}
                                     </h3>
                                     
                                     <p 
-                                        className="text-base lg:text-lg leading-relaxed text-gray-700 dark:text-gray-200"
+                                        className={`text-base lg:text-lg leading-relaxed ${isDarkBackground ? 'text-white/80' : 'text-gray-700'}`}
                                     >
                                         {step.description}
                                     </p>
@@ -130,7 +137,7 @@ const HowItWorks = () => {
                             whileInView={reduceAnimations ? { opacity: 1 } : { opacity: 1, y: 0 }}
                             viewport={{ once: true, amount: 0.3 }}
                             transition={reduceAnimations ? { duration: 0.3, delay: index * 0.1 } : { duration: 0.6, delay: index * 0.2 }}
-                            className={`relative ${step.bgColor.replace('dark:', '')} ${step.borderColor.replace('dark:', '')} border-2 rounded-3xl pt-12 pb-16 px-4 sm:px-6 text-center overflow-visible shadow-xl hover:shadow-2xl transition-shadow duration-300`}
+                            className={`relative ${step.bgColor} ${step.borderColor} border-2 rounded-3xl pt-12 pb-16 px-4 sm:px-6 text-center overflow-visible shadow-xl hover:shadow-2xl transition-shadow duration-300`}
                         >
                             {/* Número del paso */}
                             <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-30">
@@ -146,13 +153,13 @@ const HowItWorks = () => {
                                 </div>
                                 
                                 <h3 
-                                    className="text-xl font-black mb-3 text-gray-900"
+                                    className={`text-xl font-black mb-3 ${isDarkBackground ? 'text-white' : 'text-gray-900'}`}
                                 >
                                     {step.title}
                                 </h3>
                                 
                                 <p 
-                                    className="text-sm leading-relaxed px-2 text-gray-700"
+                                    className={`text-sm leading-relaxed px-2 ${isDarkBackground ? 'text-white/80' : 'text-gray-700'}`}
                                 >
                                     {step.description}
                                 </p>
